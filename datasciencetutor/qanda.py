@@ -5,7 +5,8 @@ import sys
 import glob
 
 from langchain.chains import RetrievalQA
-from langchain.llms import OpenAI
+# from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import PyPDFLoader
 # from langchain.indexes import VectorstoreIndexCreator
 from langchain.text_splitter import CharacterTextSplitter
@@ -13,10 +14,13 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 
 
+# Model pricing https://openai.com/pricing
+
 config = {
     'embedding_model': 'text-embedding-ada-002',
-    'qanda_model': 'text-ada-001',
-    'k_chunks': 2,
+    'qanda_model': 'gpt-3.5-turbo',
+    # 'qanda_model': 'text-ada-001',
+    'k_chunks': 0, #4
     'chunk_size': 1024,
     'chunk_overlap': 32
     }
@@ -74,14 +78,26 @@ def build_index(library_dir=None):
 
     retriever = db.as_retriever(search_kwargs={"k":config['k_chunks']})
 
+    # this block uses a GPT3 model
+    # qa = RetrievalQA.from_chain_type(
+    #     # this is the chat model that provides the response from the context
+    #     llm=OpenAI(model_name=config['qanda_model'], n=1, best_of=1,
+    #     temperature=0.7, max_tokens=256, top_p=1, 
+    #     frequency_penalty=0, presence_penalty=0),
+    #     chain_type="stuff", 
+    #     retriever=retriever
+    #     )
+
+    # this block uses a gpt-3.5 model
     qa = RetrievalQA.from_chain_type(
         # this is the chat model that provides the response from the context
-        llm=OpenAI(model_name=config['qanda_model'], n=1, best_of=1,
+        llm=ChatOpenAI(model_name=config['qanda_model'], n=1,
         temperature=0.7, max_tokens=256, top_p=1, 
         frequency_penalty=0, presence_penalty=0),
         chain_type="stuff", 
         retriever=retriever
         )
+
     return db, qa
 
 def ask(qa):
