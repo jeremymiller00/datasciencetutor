@@ -7,8 +7,8 @@ conda env create -f environment.yml
 ```
 
 ## To Do
-* Run from root dir
 * Specify a library directory
+* Build full index
 * Use chat model with longer context window
 
 ## Book used to build the index (not fully built yet)
