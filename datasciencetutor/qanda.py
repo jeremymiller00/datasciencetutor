@@ -31,17 +31,17 @@ def build_index(library_dir=None):
         chunk_size=1024, max_retries=1
         )
     
-    if os.path.isdir('db') and os.path.isfile('db/chroma-embeddings.parquet'):
+    if os.path.isdir('datascienceqanda/db') and os.path.isfile('datascienceqanda/db/chroma-embeddings.parquet'):
         logging.info("Loading database from disk")
         db = Chroma(
-            persist_directory='db', 
+            persist_directory='datascienceqanda/db', 
             embedding_function=embedding
             )
         logging.info("Database loaded from disk")
 
     else:
         logging.info("Building database")
-        one_book = "/Users/Jeremy/Documents/Data_Science/Projects/datascienceqanda/library/ISLR Seventh Printing.pdf"
+        one_book = "/Users/Jeremy/Documents/Data_Science/Projects/datascienceqanda/datascienceqanda/library/ISLR Seventh Printing.pdf"
         loader = PyPDFLoader(one_book)
         documents = loader.load()
         text_splitter = CharacterTextSplitter(chunk_size=1024, chunk_overlap=64)
