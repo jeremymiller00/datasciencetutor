@@ -1,8 +1,11 @@
 # library
 datasciencetutor/library/
 
-#logs
+# logs
 logs/
+
+# databases
+dbs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
