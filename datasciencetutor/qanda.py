@@ -46,17 +46,18 @@ def build_index(library_dir=None):
         )
     
     # load the db from disk
-    if os.path.isdir('db') and os.path.isfile('db/chroma-embeddings.parquet'):
+    if os.path.isdir('dbs/clarivatevaultdb') and os.path.isfile('dbs/clarivatevaultdb/chroma-embeddings.parquet'):
         logging.info("Loading database from disk")
         db = Chroma(
-            persist_directory='db', 
+            persist_directory="dbs/clarivatevaultdb", 
             embedding_function=embedding
             )
         logging.info("Database loaded from disk")
 
     # build the db if does not exist
     else:
-        logging.info("Getting books")
+        # code block for folder of pdfs
+        # logging.info("Getting books")
         # books = glob.glob(library_dir + '/*.pdf')
         # documents = []
         # one_book = "/Users/Jeremy/Documents/Data_Science/Projects/datasciencetutor/datasciencetutor/library/ISLR Seventh Printing.pdf"
@@ -65,6 +66,9 @@ def build_index(library_dir=None):
         #     loader = PyPDFLoader(book)
         #     docs = loader.load()
         #     documents.extend(docs)
+
+        # code block for obsidian vault
+        logging.info("Getting vault files")
         loader = ObsidianLoader("/Users/Jeremy/Clarivate-Vault")
         documents = loader.load()
         text_splitter = CharacterTextSplitter(
@@ -74,7 +78,7 @@ def build_index(library_dir=None):
         db = Chroma.from_documents(
             documents=texts, 
             embedding=embedding, 
-            persist_directory="db"
+            persist_directory="dbs/clarivatevaultdb"
             )
         db.persist()
         logging.info("Database persisted")
