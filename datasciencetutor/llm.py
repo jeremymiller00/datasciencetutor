@@ -1,8 +1,10 @@
+"""
+Just a simple wrapper over OpenAI LLM
+"""
 from langchain.llms import OpenAI
 
 # llm = OpenAI(temperature=0.9)
 llm = OpenAI(model_name="text-ada-001", n=2, best_of=2)
-
 
 def ask(question):
     print ("\nYou asked:")
