@@ -4,9 +4,10 @@ import logging
 import sys
 import glob
 import argparse
+import subprocess
 
 from langchain.chains import RetrievalQA
-# from langchain.llms import OpenAI
+from langchain.llms import OpenAI
 from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import PyPDFLoader, ObsidianLoader
 # from langchain.indexes import VectorstoreIndexCreator
@@ -19,8 +20,8 @@ from langchain.vectorstores import Chroma
 
 config = {
     'embedding_model': 'text-embedding-ada-002',
-    'qanda_model': 'gpt-3.5-turbo',
-    # 'qanda_model': 'text-ada-001',
+    # 'qanda_model': 'gpt-3.5-turbo', # use k=4
+    'qanda_model': 'text-ada-001', # use k=2
     'k_chunks': 4,
     'chunk_size': 1024,
     'chunk_overlap': 32
@@ -32,9 +33,9 @@ def setup_logging(log_dir=None):
     if log_dir:
         pathlib.Path(log_dir).mkdir(parents=True, exist_ok=True)
         log_file = os.path.join(log_dir, 'qanda.log')
-        logging.basicConfig(filename=log_file, level=logging.INFO, format=log_format)
+        logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format)
     else:
-        logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=log_format)
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format=log_format)
 
 
 def build_index(library_dir=None):
@@ -69,7 +70,8 @@ def build_index(library_dir=None):
 
         # code block for obsidian vault
         logging.info("Getting vault files")
-        loader = ObsidianLoader("/Users/Jeremy/Clarivate-Vault")
+        # loader = ObsidianLoader("/Users/Jeremy/Clarivate-Vault")
+        loader = ObsidianLoader("/Users/jeremymiller/Desktop/Clarivate-Vault")
         documents = loader.load()
         text_splitter = CharacterTextSplitter(
             chunk_size=config['chunk_size'], chunk_overlap=config['chunk_overlap'])
@@ -86,24 +88,24 @@ def build_index(library_dir=None):
     retriever = db.as_retriever(search_kwargs={"k":config['k_chunks']})
 
     # this block uses a gpt-3 model
-    # qa = RetrievalQA.from_chain_type(
-    #     # this is the chat model that provides the response from the context
-    #     llm=OpenAI(model_name=config['qanda_model'], n=1, best_of=1,
-    #     temperature=0.7, max_tokens=256, top_p=1, 
-    #     frequency_penalty=0, presence_penalty=0),
-    #     chain_type="stuff", 
-    #     retriever=retriever
-    #     )
-
-    # this block uses a gpt-3.5 model
     qa = RetrievalQA.from_chain_type(
         # this is the chat model that provides the response from the context
-        llm=ChatOpenAI(model_name=config['qanda_model'], n=1,
+        llm=OpenAI(model_name=config['qanda_model'], n=1, best_of=1,
         temperature=0.7, max_tokens=256, top_p=1, 
         frequency_penalty=0, presence_penalty=0),
         chain_type="stuff", 
         retriever=retriever
         )
+
+    # # this block uses a gpt-3.5 model
+    # qa = RetrievalQA.from_chain_type(
+    #     # this is the chat model that provides the response from the context
+    #     llm=ChatOpenAI(model_name=config['qanda_model'], n=1,
+    #     temperature=0.7, max_tokens=256, top_p=1, 
+    #     frequency_penalty=0, presence_penalty=0),
+    #     chain_type="stuff", 
+    #     retriever=retriever
+    #     )
 
     return db, qa
 
@@ -116,7 +118,18 @@ def ask(qa):
         else:
             logging.info(f"Question asked: {question}")
             try:
-                answer = qa.run(question)
+                # local alpaca response model - no context yet
+                logging.info("Writing file")
+                with open("temp", "w") as file:
+                    file.write(question)
+                logging.info("Executing alpaca subprocess")
+                cmd = "/Users/jeremymiller/alpaca.cpp/chat -f temp"
+                result = subprocess.run(cmd, shell=True, text=True,
+                                        capture_output=True)
+                answer = result.stdout
+                print(answer)
+                # OpenAI response model
+                # answer = qa.run(question)
                 logging.info(f"Answer provided: {answer}")
                 print("\n" + answer + "\n")
             except BaseException as e:
