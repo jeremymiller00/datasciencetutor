@@ -7,7 +7,7 @@ import glob
 from langchain.chains import RetrievalQA
 # from langchain.llms import OpenAI
 from langchain.chat_models import ChatOpenAI
-from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader, ObsidianLoader
 # from langchain.indexes import VectorstoreIndexCreator
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
@@ -20,7 +20,7 @@ config = {
     'embedding_model': 'text-embedding-ada-002',
     'qanda_model': 'gpt-3.5-turbo',
     # 'qanda_model': 'text-ada-001',
-    'k_chunks': 0, #4
+    'k_chunks': 4,
     'chunk_size': 1024,
     'chunk_overlap': 32
     }
@@ -56,14 +56,16 @@ def build_index(library_dir=None):
     # build the db if does not exist
     else:
         logging.info("Getting books")
-        books = glob.glob(library_dir + '/*.pdf')
-        documents = []
+        # books = glob.glob(library_dir + '/*.pdf')
+        # documents = []
         # one_book = "/Users/Jeremy/Documents/Data_Science/Projects/datasciencetutor/datasciencetutor/library/ISLR Seventh Printing.pdf"
-        for book in books:
-            logging.info(f"Loading book: {book}")
-            loader = PyPDFLoader(book)
-            docs = loader.load()
-            documents.extend(docs)
+        # for book in books:
+        #     logging.info(f"Loading book: {book}")
+        #     loader = PyPDFLoader(book)
+        #     docs = loader.load()
+        #     documents.extend(docs)
+        loader = ObsidianLoader("/Users/Jeremy/Clarivate-Vault")
+        documents = loader.load()
         text_splitter = CharacterTextSplitter(
             chunk_size=config['chunk_size'], chunk_overlap=config['chunk_overlap'])
         texts = text_splitter.split_documents(documents)
@@ -78,7 +80,7 @@ def build_index(library_dir=None):
 
     retriever = db.as_retriever(search_kwargs={"k":config['k_chunks']})
 
-    # this block uses a GPT3 model
+    # this block uses a gpt-3 model
     # qa = RetrievalQA.from_chain_type(
     #     # this is the chat model that provides the response from the context
     #     llm=OpenAI(model_name=config['qanda_model'], n=1, best_of=1,
@@ -105,7 +107,7 @@ def ask(qa):
         print("Type '(exit)' to exit\n")
         question = input("Question:\n\n")
         if question == "(exit)":
-            return
+            sys.exit(0)
         else:
             logging.info(f"Question asked: {question}")
             try:
@@ -115,11 +117,43 @@ def ask(qa):
             except BaseException as e:
                 print(f"An exception has occurred: {e}\n")
 
-def main(log_dir=None, library_dir=None):
+def search(db):
+    while True:
+        print("Type '(exit)' to exit\n")
+        query = input("Query:\n\n")
+        if query == "(exit)":
+            sys.exit(0)
+        else:
+            logging.info(f"Query searched: {query}")
+            try:
+                docs = db.similarity_search_with_score(query, k=config["k_chunks"])
+                for doc in docs:
+                    print("\n<<<>>>\n")
+                    print(doc)
+                    print("\n<<<>>>\n")
+            except BaseException as e:
+                print(f"An exception has occurred: {e}\n")
+
+def main(log_dir=None, library_dir=None, function=None):
     setup_logging(log_dir=log_dir)
     db, qa = build_index(library_dir=library_dir)
-    ask(qa)
+
+    if function == None or function == "ask":
+        ask(qa)
+    elif function == "search":
+        search(db)
+    else:
+        print("Unknown function: available functions are [ask, search]")
+        sys.exit(1)
 
 ######################
 if __name__ == '__main__':
-    main(log_dir='logs', library_dir='datasciencetutor/library')
+    if len(sys.argv) > 1:
+        function=sys.argv[1]
+    else:
+        function = None
+
+    main(
+        log_dir='logs', 
+        library_dir='datasciencetutor/library', 
+        function=function)
