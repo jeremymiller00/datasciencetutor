@@ -3,6 +3,7 @@ import os.path
 import logging
 import sys
 import glob
+import argparse
 
 from langchain.chains import RetrievalQA
 # from langchain.llms import OpenAI
@@ -134,26 +135,28 @@ def search(db):
             except BaseException as e:
                 print(f"An exception has occurred: {e}\n")
 
+def parse():
+    parser = argparse.ArgumentParser(
+        description="Query or ask a question over a document set")
+    parser.add_argument("-f", "--function", choices=["ask", "search"], default='ask')
+    args = parser.parse_args()
+    return args
+
 def main(log_dir=None, library_dir=None, function=None):
     setup_logging(log_dir=log_dir)
     db, qa = build_index(library_dir=library_dir)
-
-    if function == None or function == "ask":
+    if function == "ask":
         ask(qa)
     elif function == "search":
         search(db)
     else:
-        print("Unknown function: available functions are [ask, search]")
+        print(f"Unknown function: {function}. Available functions are [ask, search]")
         sys.exit(1)
 
 ######################
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        function=sys.argv[1]
-    else:
-        function = None
-
+    args = parse()
     main(
         log_dir='logs', 
         library_dir='datasciencetutor/library', 
-        function=function)
+        function=args.function)
