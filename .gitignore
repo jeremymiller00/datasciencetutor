@@ -7,6 +7,9 @@ logs/
 # databases
 dbs/
 
+# alapca model
+./ggml-alpaca-7b-q4.bin
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

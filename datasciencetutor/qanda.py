@@ -7,7 +7,7 @@ import argparse
 import subprocess
 
 from langchain.chains import RetrievalQA
-from langchain.llms import OpenAI
+from langchain.llms import OpenAI, LlamaCpp
 from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import PyPDFLoader, ObsidianLoader
 # from langchain.indexes import VectorstoreIndexCreator
@@ -20,8 +20,8 @@ from langchain.vectorstores import Chroma
 
 config = {
     'embedding_model': 'text-embedding-ada-002',
-    # 'qanda_model': 'gpt-3.5-turbo', # use k=4
-    'qanda_model': 'text-ada-001', # use k=2
+    'qanda_model': 'gpt-3.5-turbo', # use k=4
+    # 'qanda_model': 'text-ada-001', # use k=2
     'k_chunks': 4,
     'chunk_size': 1024,
     'chunk_overlap': 32
@@ -88,14 +88,14 @@ def build_index(library_dir=None):
     retriever = db.as_retriever(search_kwargs={"k":config['k_chunks']})
 
     # this block uses a gpt-3 model
-    qa = RetrievalQA.from_chain_type(
-        # this is the chat model that provides the response from the context
-        llm=OpenAI(model_name=config['qanda_model'], n=1, best_of=1,
-        temperature=0.7, max_tokens=256, top_p=1, 
-        frequency_penalty=0, presence_penalty=0),
-        chain_type="stuff", 
-        retriever=retriever
-        )
+    # qa = RetrievalQA.from_chain_type(
+    #     # this is the chat model that provides the response from the context
+    #     llm=OpenAI(model_name=config['qanda_model'], n=1, best_of=1,
+    #     temperature=0.7, max_tokens=256, top_p=1, 
+    #     frequency_penalty=0, presence_penalty=0),
+    #     chain_type="stuff", 
+    #     retriever=retriever
+    #     )
 
     # # this block uses a gpt-3.5 model
     # qa = RetrievalQA.from_chain_type(
@@ -106,6 +106,19 @@ def build_index(library_dir=None):
     #     chain_type="stuff", 
     #     retriever=retriever
     #     )
+
+    # # this block uses a local llama model
+    qa = RetrievalQA.from_chain_type(
+        # this is the chat model that provides the response from the context
+        llm=LlamaCpp(model_path="ggml-alpaca-7b-q4.bin", 
+                     n_ctx=2048,
+                     temperature=0.8,
+                     top_p=0.95,
+                     repeat_penalty=1.1,
+                     top_k=40),
+        chain_type="stuff", 
+        retriever=retriever
+        )
 
     return db, qa
 
@@ -118,18 +131,7 @@ def ask(qa):
         else:
             logging.info(f"Question asked: {question}")
             try:
-                # local alpaca response model - no context yet
-                logging.info("Writing file")
-                with open("temp", "w") as file:
-                    file.write(question)
-                logging.info("Executing alpaca subprocess")
-                cmd = "/Users/jeremymiller/alpaca.cpp/chat -f temp"
-                result = subprocess.run(cmd, shell=True, text=True,
-                                        capture_output=True)
-                answer = result.stdout
-                print(answer)
-                # OpenAI response model
-                # answer = qa.run(question)
+                answer = qa.run(question)
                 logging.info(f"Answer provided: {answer}")
                 print("\n" + answer + "\n")
             except BaseException as e:
