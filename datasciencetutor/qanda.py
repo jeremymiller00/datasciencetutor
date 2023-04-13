@@ -110,7 +110,7 @@ def build_index(library_dir=None):
     # # this block uses a local llama model
     qa = RetrievalQA.from_chain_type(
         # this is the chat model that provides the response from the context
-        llm=LlamaCpp(model_path="ggml-alpaca-7b-q4.bin", 
+        llm=LlamaCpp(model_path="../llm-models/ggml-alpaca-7b-q4.bin", 
                      n_ctx=2048,
                      temperature=0.8,
                      top_p=0.95,
